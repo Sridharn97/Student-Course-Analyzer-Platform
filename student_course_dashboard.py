@@ -1,9 +1,7 @@
-
-
 import streamlit as st
 import pandas as pd
 import numpy as np
-from scipy.stats import f_oneway, chi2_contingency
+from scipy.stats import chi2_contingency
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
@@ -110,20 +108,7 @@ if uploaded_file:
         col3.metric("🎯 Avg Progress (%)", f"{df['Progress_Percent'].mean():.2f}")
 
         
-        st.subheader("📈 ANOVA Test – Platform vs Score")
-        if 'Platform' in df.columns and 'Score' in df.columns:
-            groups = [g["Score"].values for _, g in df.groupby("Platform")]
-            if len(groups) > 1:
-                anova_result = f_oneway(*groups)
-                st.write(f"**F-Statistic:** {anova_result.statistic:.4f}, **p-value:** {anova_result.pvalue:.4f}")
-                if anova_result.pvalue < 0.05:
-                    st.success("✅ Significant difference in scores across platforms.")
-                else:
-                    st.warning("❌ No significant difference found between platforms.")
-            else:
-                st.info("ℹ️ Not enough groups for ANOVA test")
-        else:
-            st.info("ℹ️ Platform or Score column not found in data")
+        # Removed ANOVA Test section
 
         st.subheader("📉 Chi-Square Test – Sentiment vs Completion")
         if 'Sentiment' in df.columns and 'Completion_Status' in df.columns:
@@ -681,65 +666,114 @@ if uploaded_file:
         st.header("⚠️ At-Risk Student Detection System")
         st.write("Identify students who may need additional support.")
         
-        # Risk scoring
-        df['Risk_Score'] = 0.0
-        
-        # Low progress risk
-        if 'Progress_Percent' in df.columns:
-            progress_risk = (100 - df['Progress_Percent']) / 100 * 0.4
-            df['Risk_Score'] += progress_risk
-        
-        # Low score risk
-        if 'Score' in df.columns:
-            score_risk = (100 - df['Score']) / 100 * 0.4
-            df['Risk_Score'] += score_risk
-        
-        # Negative sentiment risk
-        if 'Sentiment' in df.columns:
-            sentiment_risk = (df['Sentiment'] == 'Negative').astype(int) * 0.2
-            df['Risk_Score'] += sentiment_risk
-        
-        # Normalize risk score
-        df['Risk_Score'] = df['Risk_Score'] * 100
-        
-        # Risk categories
-        df['Risk_Level'] = pd.cut(df['Risk_Score'], 
-                                 bins=[0, 30, 50, 70, 100],
-                                 labels=['Low', 'Medium', 'High', 'Critical'])
-        
-        # Display at-risk students
-        risk_threshold = st.slider("Risk Threshold", 0, 100, 50)
-        at_risk = df[df['Risk_Score'] >= risk_threshold].sort_values('Risk_Score', ascending=False)
-        
-        st.metric("At-Risk Students", len(at_risk), 
-                 f"{len(at_risk)/len(df)*100:.1f}% of total")
-        
-        # Risk distribution
-        fig = px.histogram(df, x='Risk_Score', nbins=20, 
-                          title="Risk Score Distribution",
-                          labels={'Risk_Score': 'Risk Score', 'count': 'Number of Students'})
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # At-risk students table
-        st.subheader("🚨 High-Risk Students")
-        if len(at_risk) > 0:
-            display_cols = ['Student_ID', 'Risk_Score', 'Risk_Level', 'Score', 'Progress_Percent']
-            display_cols = [col for col in display_cols if col in at_risk.columns]
-            st.dataframe(at_risk[display_cols].head(20), use_container_width=True)
+        # Aggregate data per unique student first
+        if 'Student_ID' in df.columns:
+            # Calculate average metrics per student
+            student_risk_data = df.groupby('Student_ID').agg({
+                'Progress_Percent': 'mean' if 'Progress_Percent' in df.columns else lambda x: 0,
+                'Score': 'mean' if 'Score' in df.columns else lambda x: 0,
+                'Sentiment': lambda x: 'Negative' if (x == 'Negative').any() else x.mode()[0] if len(x.mode()) > 0 else 'Neutral'
+            }).reset_index()
             
-            # Recommendations
-            st.subheader("💡 Intervention Recommendations")
-            for idx, row in at_risk.head(10).iterrows():
-                st.write(f"**Student {row['Student_ID']}** (Risk: {row['Risk_Score']:.1f})")
-                if row['Progress_Percent'] < 50:
-                    st.write("- ⚠️ Low progress detected - recommend additional study time")
-                if row['Score'] < 60:
-                    st.write("- 📚 Low score - suggest tutoring or extra resources")
-                if row.get('Sentiment') == 'Negative':
-                    st.write("- 😞 Negative feedback - schedule counseling session")
-                st.write("---")
+            # Rename columns for clarity
+            student_risk_data.columns = ['Student_ID', 'Avg_Progress', 'Avg_Score', 'Sentiment']
+            
+            # Calculate risk score for each unique student
+            student_risk_data['Risk_Score'] = 0.0
+            
+            # Progress risk
+            if 'Avg_Progress' in student_risk_data.columns:
+                progress_risk = (100 - student_risk_data['Avg_Progress']) / 100 * 0.4
+                student_risk_data['Risk_Score'] += progress_risk
+            
+            # Score risk
+            if 'Avg_Score' in student_risk_data.columns:
+                score_risk = (100 - student_risk_data['Avg_Score']) / 100 * 0.4
+                student_risk_data['Risk_Score'] += score_risk
+            
+            # Sentiment risk
+            if 'Sentiment' in student_risk_data.columns:
+                sentiment_risk = (student_risk_data['Sentiment'] == 'Negative').astype(int) * 0.2
+                student_risk_data['Risk_Score'] += sentiment_risk
+            
+            # Normalize risk score (multiply by 100 to get 0-100 scale)
+            student_risk_data['Risk_Score'] = student_risk_data['Risk_Score'] * 100
+            
+            # Risk categories
+            student_risk_data['Risk_Level'] = pd.cut(student_risk_data['Risk_Score'], 
+                                                     bins=[0, 30, 50, 70, 100],
+                                                     labels=['Low', 'Medium', 'High', 'Critical'])
+            
+            # Display at-risk students
+            st.subheader("🎚️ Set Risk Threshold")
+            risk_threshold = st.slider("Risk Threshold", 0, 100, 50)
+            
+            at_risk_students = student_risk_data[student_risk_data['Risk_Score'] >= risk_threshold].sort_values('Risk_Score', ascending=False)
+            
+            # Show breakdown
+            col_metric1, col_metric2, col_metric3 = st.columns(3)
+            with col_metric1:
+                st.metric("At-Risk Students", len(at_risk_students), 
+                         f"{len(at_risk_students)/len(student_risk_data)*100:.1f}% of total")
+            with col_metric2:
+                st.metric("Total Students", len(student_risk_data))
+            with col_metric3:
+                safe_students = len(student_risk_data) - len(at_risk_students)
+                st.metric("Safe Students", safe_students,
+                         f"{safe_students/len(student_risk_data)*100:.1f}% of total")
+            
+            # Risk distribution
+            fig = px.histogram(student_risk_data, x='Risk_Score', nbins=20, 
+                              title="Risk Score Distribution",
+                              labels={'Risk_Score': 'Risk Score (0-100)', 'count': 'Number of Students'})
+            # Add threshold line
+            fig.add_vline(x=risk_threshold, line_dash="dash", line_color="red", 
+                         annotation_text=f"Threshold: {risk_threshold}", annotation_position="top")
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Risk level distribution
+            if 'Risk_Level' in student_risk_data.columns:
+                risk_level_counts = student_risk_data['Risk_Level'].value_counts()
+                fig_pie = px.pie(values=risk_level_counts.values, names=risk_level_counts.index,
+                               title="Students by Risk Level",
+                               color_discrete_map={'Low': '#48bb78', 'Medium': '#ed8936', 
+                                                 'High': '#f56565', 'Critical': '#c53030'})
+                st.plotly_chart(fig_pie, use_container_width=True)
+            
+            # At-risk students table
+            st.subheader("🚨 High-Risk Students")
+            if len(at_risk_students) > 0:
+                display_cols = ['Student_ID', 'Risk_Score', 'Risk_Level', 'Avg_Score', 'Avg_Progress']
+                if 'Sentiment' in at_risk_students.columns:
+                    display_cols.append('Sentiment')
+                display_cols = [col for col in display_cols if col in at_risk_students.columns]
+                st.dataframe(at_risk_students[display_cols].head(20), use_container_width=True)
+                
+                # Recommendations
+                st.subheader("💡 Intervention Recommendations")
+                for idx, row in at_risk_students.head(10).iterrows():
+                    st.write(f"**Student {row['Student_ID']}** (Risk: {row['Risk_Score']:.1f} - {row['Risk_Level']})")
+                    recommendations = []
+                    
+                    if row['Avg_Progress'] < 50:
+                        recommendations.append("⚠️ **Low average progress** - Recommend additional study time and check-in meetings")
+                    if row['Avg_Score'] < 60:
+                        recommendations.append("📚 **Low average score** - Suggest tutoring, extra resources, or study groups")
+                    if row.get('Sentiment') == 'Negative':
+                        recommendations.append("😞 **Negative feedback** - Schedule counseling session or feedback discussion")
+                    if row['Risk_Score'] >= 70:
+                        recommendations.append("🚨 **Critical risk level** - Immediate intervention required")
+                    
+                    if recommendations:
+                        for rec in recommendations:
+                            st.write(f"- {rec}")
+                    else:
+                        st.write("- Monitor student progress regularly")
+                    st.write("---")
+            else:
+                st.success("✅ No students above risk threshold!")
         else:
-            st.success("✅ No students above risk threshold!")
+            st.error("Student_ID column not found in dataset")
 
     # ============================================
     # PAGE 4: COURSE RECOMMENDATIONS
