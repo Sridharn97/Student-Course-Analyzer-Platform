@@ -2,6 +2,7 @@
 
 import pandas as pd
 import streamlit as st
+from .ui_utils import apply_premium_plotly_layout
 import plotly.express as px
 
 
@@ -30,19 +31,19 @@ def render_course_analytics_tab(df):
         fig_top = px.bar(top_courses, x='Course_Name', y='Avg_Score', title="Highest Scoring Courses",
                          labels={'Avg_Score': 'Average Score', 'Course_Name': 'Course'})
         fig_top.update_xaxes(tickangle=45)
-        st.plotly_chart(fig_top, use_container_width=True)
+        st.plotly_chart(apply_premium_plotly_layout(fig_top), use_container_width=True)
     with col2:
         st.write("### Most Popular Courses")
         popular_courses = course_stats.sort_values('Enrollments', ascending=False).head(10)
         fig_popular = px.bar(popular_courses, x='Course_Name', y='Enrollments', title="Most Enrolled Courses",
                              labels={'Enrollments': 'Number of Students', 'Course_Name': 'Course'})
         fig_popular.update_xaxes(tickangle=45)
-        st.plotly_chart(fig_popular, use_container_width=True)
+        st.plotly_chart(apply_premium_plotly_layout(fig_popular), use_container_width=True)
 
     st.write("### Course Difficulty Analysis")
     course_stats['Difficulty_Level'] = pd.cut(course_stats['Avg_Score'], bins=[0, 60, 75, 85, 100],
                                               labels=['Challenging', 'Moderate', 'Easy', 'Very Easy'])
     difficulty_counts = course_stats['Difficulty_Level'].value_counts()
     fig_difficulty = px.pie(values=difficulty_counts.values, names=difficulty_counts.index, title="Course Difficulty Distribution")
-    st.plotly_chart(fig_difficulty, use_container_width=True)
+    st.plotly_chart(apply_premium_plotly_layout(fig_difficulty), use_container_width=True)
     st.dataframe(course_stats[['Course_Name', 'Avg_Score', 'Avg_Progress', 'Avg_Rating', 'Enrollments', 'Difficulty_Level']], use_container_width=True)

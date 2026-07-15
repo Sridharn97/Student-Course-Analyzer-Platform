@@ -2,6 +2,7 @@
 
 import pandas as pd
 import streamlit as st
+from .ui_utils import apply_premium_plotly_layout
 import plotly.express as px
 
 from .at_risk_utils import calculate_risk_scores, get_recommendations_for_student
@@ -33,13 +34,13 @@ def render_at_risk(df):
     fig = px.histogram(student_risk_data, x='Risk_Score', nbins=20, title="Risk Score Distribution",
                        labels={'Risk_Score': 'Risk Score (0-100)', 'count': 'Number of Students'})
     fig.add_vline(x=risk_threshold, line_dash="dash", line_color="red", annotation_text=f"Threshold: {risk_threshold}", annotation_position="top")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(apply_premium_plotly_layout(fig), use_container_width=True)
 
     if 'Risk_Level' in student_risk_data.columns:
         risk_level_counts = student_risk_data['Risk_Level'].value_counts()
         fig_pie = px.pie(values=risk_level_counts.values, names=risk_level_counts.index, title="Students by Risk Level",
                          color_discrete_map={'Low': '#48bb78', 'Medium': '#ed8936', 'High': '#f56565', 'Critical': '#c53030'})
-        st.plotly_chart(fig_pie, use_container_width=True)
+        st.plotly_chart(apply_premium_plotly_layout(fig_pie), use_container_width=True)
 
     st.subheader("High-Risk Students")
     if len(at_risk_students) == 0:
@@ -66,7 +67,7 @@ def render_at_risk(df):
             rlc = at_risk_students['Risk_Level'].value_counts()
             fig_risk_pie = px.pie(values=rlc.values, names=rlc.index, title="At-Risk Students by Risk Level",
                                   color_discrete_map={'Low': '#48bb78', 'Medium': '#ed8936', 'High': '#f56565', 'Critical': '#c53030'})
-            st.plotly_chart(fig_risk_pie, use_container_width=True)
+            st.plotly_chart(apply_premium_plotly_layout(fig_risk_pie), use_container_width=True)
         with col2:
             st.write("### Common Risk Factors")
             all_reasons = []
@@ -76,7 +77,7 @@ def render_at_risk(df):
             reason_counts = pd.Series(all_reasons).value_counts()
             fig_reasons = px.bar(x=reason_counts.index, y=reason_counts.values, title="Most Common Risk Factors", labels={'x': 'Risk Factor', 'y': 'Count'})
             fig_reasons.update_xaxes(tickangle=45)
-            st.plotly_chart(fig_reasons, use_container_width=True)
+            st.plotly_chart(apply_premium_plotly_layout(fig_reasons), use_container_width=True)
 
     with tabs[1]:
         st.write("### Individual Student Recommendations")
@@ -112,7 +113,7 @@ def render_at_risk(df):
                 fig_shap, shap_text = generate_shap_explanation(student_id, df, available_features)
                 if fig_shap:
                     st.markdown(shap_text)
-                    st.plotly_chart(fig_shap, use_container_width=True)
+                    st.plotly_chart(apply_premium_plotly_layout(fig_shap), use_container_width=True)
                 else:
                     st.info("Could not generate explanation for this student.")
 

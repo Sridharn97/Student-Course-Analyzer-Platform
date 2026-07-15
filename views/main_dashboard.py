@@ -1,6 +1,7 @@
 """Main Dashboard: dataset preview, key metrics, and platform/sentiment/performance tabs."""
 
 import streamlit as st
+from .ui_utils import apply_premium_plotly_layout
 import pandas as pd
 import plotly.express as px
 
@@ -33,7 +34,7 @@ def render_main_dashboard(df):
         if 'Platform' in df.columns and 'Score' in df.columns:
             st.write("### Platform Performance Comparison")
             fig1 = px.box(df, x='Platform', y='Score', color='Platform', title="Platform-wise Score Distribution")
-            st.plotly_chart(fig1, use_container_width=True)
+            st.plotly_chart(apply_premium_plotly_layout(fig1), use_container_width=True)
             st.write("---")
             st.write("### Platform Analytics & Rankings")
             if 'Platform' in df.columns:
@@ -55,7 +56,7 @@ def render_main_dashboard(df):
                     title="Platforms Ranked by Average Score",
                     labels={'Avg Score': 'Average Score'}, color_continuous_scale='RdYlGn'
                 )
-                st.plotly_chart(fig_rank, use_container_width=True)
+                st.plotly_chart(apply_premium_plotly_layout(fig_rank), use_container_width=True)
                 st.write("### Detailed Platform Metrics Comparison")
                 metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
                 with metrics_col1:
@@ -64,7 +65,7 @@ def render_main_dashboard(df):
                         platform_stats_sorted, x='Platform', y=['Avg Score', 'Median Score'],
                         title="Average vs Median Score by Platform", barmode='group'
                     )
-                    st.plotly_chart(fig_score_compare, use_container_width=True)
+                    st.plotly_chart(apply_premium_plotly_layout(fig_score_compare), use_container_width=True)
                 with metrics_col2:
                     st.write("**Engagement & Rating**")
                     fig_engagement = px.scatter(
@@ -73,7 +74,7 @@ def render_main_dashboard(df):
                         title="Progress vs Rating (bubble size = students)",
                         labels={'Avg Progress': 'Average Progress (%)', 'Avg Rating': 'Average Rating'}
                     )
-                    st.plotly_chart(fig_engagement, use_container_width=True)
+                    st.plotly_chart(apply_premium_plotly_layout(fig_engagement), use_container_width=True)
                 with metrics_col3:
                     st.write("**Consistency (Lower is Better)**")
                     fig_consistency = px.bar(
@@ -81,7 +82,7 @@ def render_main_dashboard(df):
                         title="Score Consistency by Platform (Lower = More Consistent)",
                         color='Std Dev', color_continuous_scale='Viridis'
                     )
-                    st.plotly_chart(fig_consistency, use_container_width=True)
+                    st.plotly_chart(apply_premium_plotly_layout(fig_consistency), use_container_width=True)
                 st.write("---")
                 st.write("### Best Platform Analysis")
                 best_platform = platform_stats_sorted.iloc[0]
@@ -136,7 +137,7 @@ def render_main_dashboard(df):
                 df, names='Sentiment', title="Student Feedback Sentiment Distribution",
                 color_discrete_sequence=px.colors.qualitative.Set3
             )
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(apply_premium_plotly_layout(fig2), use_container_width=True)
             if 'Platform' in df.columns:
                 st.write("---")
                 st.write("### Sentiment by Platform")
@@ -145,7 +146,7 @@ def render_main_dashboard(df):
                     sentiment_platform, title="Sentiment Distribution Across Platforms",
                     barmode='stack', color_discrete_sequence=px.colors.qualitative.Set3
                 )
-                st.plotly_chart(fig_sentiment_platform, use_container_width=True)
+                st.plotly_chart(apply_premium_plotly_layout(fig_sentiment_platform), use_container_width=True)
         else:
             st.info("Sentiment column not available")
 
@@ -160,14 +161,14 @@ def render_main_dashboard(df):
                     title="Progress vs Score Correlation",
                     labels={'Progress_Percent': 'Progress (%)', 'Score': 'Score'}
                 )
-                st.plotly_chart(fig3, use_container_width=True)
+                st.plotly_chart(apply_premium_plotly_layout(fig3), use_container_width=True)
             with col2:
                 fig_score_dist = px.histogram(
                     df, x='Score', nbins=20, title="Score Distribution",
                     labels={'Score': 'Score', 'count': 'Number of Students'},
                     color_discrete_sequence=['#636EFA']
                 )
-                st.plotly_chart(fig_score_dist, use_container_width=True)
+                st.plotly_chart(apply_premium_plotly_layout(fig_score_dist), use_container_width=True)
             if 'Progress_Percent' in df.columns:
                 st.write("---")
                 st.write("### Progress Distribution")
@@ -177,6 +178,6 @@ def render_main_dashboard(df):
                     labels={'Progress_Percent': 'Progress (%)', 'count': 'Number of Students'},
                     color_discrete_sequence=['#00CC96']
                 )
-                st.plotly_chart(fig_progress_dist, use_container_width=True)
+                st.plotly_chart(apply_premium_plotly_layout(fig_progress_dist), use_container_width=True)
         else:
             st.info("Progress_Percent or Score column not available")

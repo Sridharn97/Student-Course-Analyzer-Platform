@@ -11,12 +11,68 @@ st.set_page_config(page_title="Student Course Analyzer", layout="wide", initial_
 
 st.markdown("""
 <style>
-    .main-header { font-size: 1.5rem; font-weight: 600; color: #1e293b; margin-bottom: 0.25rem; }
-    .main-caption { color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; }
-    div[data-testid="stSidebar"] > div:first-child { padding-top: 1rem; }
+    /* Global Fonts & Spacing */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .main-header {
+        font-size: 2.2rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, #4F46E5 0%, #06B6D4 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.25rem;
+    }
+    
+    .main-caption { 
+        color: #64748b; 
+        font-size: 1rem; 
+        font-weight: 500;
+        margin-bottom: 2rem; 
+    }
+    
+    /* Layout */
+    .block-container { 
+        padding-top: 2rem; 
+        padding-bottom: 3rem;
+        max-width: 1400px; 
+    }
+    
+    /* Cards and Metrics */
+    div[data-testid="metric-container"] {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    div[data-testid="metric-container"]:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Sidebar */
+    div[data-testid="stSidebar"] {
+        background-color: #F8FAFC;
+        border-right: 1px solid #E2E8F0;
+    }
+    div[data-testid="stSidebar"] > div:first-child { 
+        padding-top: 2rem; 
+    }
+    
+    /* Radio Buttons (Sidebar Navigation) */
     .stRadio > div { gap: 0.5rem; }
-    .block-container { padding-top: 1.5rem; max-width: 1400px; }
-    hr { margin: 1.5rem 0; border-color: #e2e8f0; }
+    
+    /* General elements */
+    hr { 
+        margin: 2rem 0; 
+        border-color: #E2E8F0; 
+    }
 </style>
 """, unsafe_allow_html=True)
 

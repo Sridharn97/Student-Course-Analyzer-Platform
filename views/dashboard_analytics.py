@@ -1,6 +1,7 @@
 """Main Dashboard: advanced analytics tabs, search, and insights."""
 
 import streamlit as st
+from .ui_utils import apply_premium_plotly_layout
 import pandas as pd
 import plotly.express as px
 
@@ -19,7 +20,7 @@ def render_dashboard_analytics(df):
                 df, x='Score', nbins=20, title="Student Score Distribution",
                 labels={'Score': 'Score', 'count': 'Number of Students'}
             )
-            st.plotly_chart(fig_dist, use_container_width=True)
+            st.plotly_chart(apply_premium_plotly_layout(fig_dist), use_container_width=True)
 
     with analytics_tabs[1]:
         st.write("### Course Performance Summary")
@@ -38,7 +39,7 @@ def render_dashboard_analytics(df):
                     labels={'x': 'Course ID', 'y': 'Average Rating'},
                     title="Course Ratings Comparison"
                 )
-                st.plotly_chart(fig_course, use_container_width=True)
+                st.plotly_chart(apply_premium_plotly_layout(fig_course), use_container_width=True)
 
     with analytics_tabs[2]:
         st.write("### Engagement & Sentiment Analysis")
@@ -56,7 +57,7 @@ def render_dashboard_analytics(df):
                 values=sentiment_counts.values, names=sentiment_counts.index,
                 title="Student Feedback Sentiment Distribution"
             )
-            st.plotly_chart(fig_sentiment, use_container_width=True)
+            st.plotly_chart(apply_premium_plotly_layout(fig_sentiment), use_container_width=True)
         if 'Progress_Percent' in df.columns and 'Score' in df.columns:
             st.write("### Progress vs Performance Level")
             df_copy = df.copy()
@@ -70,7 +71,7 @@ def render_dashboard_analytics(df):
                 labels={'x': 'Performance Level', 'y': 'Average Progress (%)'},
                 title="Average Progress by Performance Level", color=perf_progress.index
             )
-            st.plotly_chart(fig_perf, use_container_width=True)
+            st.plotly_chart(apply_premium_plotly_layout(fig_perf), use_container_width=True)
 
     with analytics_tabs[3]:
         st.write("### Export Data")

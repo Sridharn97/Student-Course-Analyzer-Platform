@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
+from .ui_utils import apply_premium_plotly_layout
 import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
@@ -82,7 +83,7 @@ def render_ml_models(df, X_train, X_test, y_train, y_test, X_train_scaled, X_tes
     fig = go.Figure()
     fig.add_trace(go.Bar(x=comparison_df.index, y=comparison_df['R²'], name='R² Score', marker_color='lightblue'))
     fig.update_layout(title="Model Comparison - R² Scores", xaxis_title="Model", yaxis_title="R² Score")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(apply_premium_plotly_layout(fig), use_container_width=True)
     best_model_name = comparison_df.index[0]
     st.success(f"Best Model: **{best_model_name}** with R² = {comparison_df.loc[best_model_name, 'R²']:.4f}")
 
@@ -114,7 +115,7 @@ def render_ml_models(df, X_train, X_test, y_train, y_test, X_train_scaled, X_tes
                 name=name, boxpoints=False
             ))
         fig_cv.update_layout(title="Cross-Validation R² Score Distribution", yaxis_title="R² Score")
-        st.plotly_chart(fig_cv, use_container_width=True)
+        st.plotly_chart(apply_premium_plotly_layout(fig_cv), use_container_width=True)
 
     with analysis_tabs[1]:
         st.write("### Feature Importance Comparison")
@@ -132,7 +133,7 @@ def render_ml_models(df, X_train, X_test, y_train, y_test, X_train_scaled, X_tes
                 title="Feature Importance Across Models",
                 labels=dict(x="Features", y="Models", color="Importance")
             )
-            st.plotly_chart(fig_importance, use_container_width=True)
+            st.plotly_chart(apply_premium_plotly_layout(fig_importance), use_container_width=True)
             for feature in available_features:
                 fig_feat = go.Figure()
                 for model_name in importance_data.keys():
@@ -141,7 +142,7 @@ def render_ml_models(df, X_train, X_test, y_train, y_test, X_train_scaled, X_tes
                         y=[importance_df.loc[feature, model_name]]
                     ))
                 fig_feat.update_layout(title=f"Feature Importance: {feature}", barmode='group')
-                st.plotly_chart(fig_feat, use_container_width=True)
+                st.plotly_chart(apply_premium_plotly_layout(fig_feat), use_container_width=True)
         else:
             st.info("Feature importance not available for all models")
 
@@ -170,4 +171,4 @@ def render_ml_models(df, X_train, X_test, y_train, y_test, X_train_scaled, X_tes
                 y=[robustness_metrics[m][metric] for m in robustness_metrics.keys()]
             ))
         fig_robust.update_layout(title="Model Robustness Metrics", barmode='group', yaxis_title="Metric Value")
-        st.plotly_chart(fig_robust, use_container_width=True)
+        st.plotly_chart(apply_premium_plotly_layout(fig_robust), use_container_width=True)

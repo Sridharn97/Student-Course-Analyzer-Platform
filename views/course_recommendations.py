@@ -2,6 +2,7 @@
 
 import pandas as pd
 import streamlit as st
+from .ui_utils import apply_premium_plotly_layout
 import plotly.express as px
 
 from .course_analytics import render_course_analytics_tab
@@ -122,7 +123,7 @@ def render_course_recommendations(df):
             st.dataframe(rec_df[display_cols].head(10), use_container_width=True)
             fig = px.bar(rec_df.head(10), x='Course_Name', y='Recommendation_Score', title="Top 10 Course Recommendations", labels={'Recommendation_Score': 'Recommendation Score', 'Course_Name': 'Course Name'})
             fig.update_xaxes(tickangle=45)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(apply_premium_plotly_layout(fig), use_container_width=True)
         else:
             st.info("Student has enrolled in all available courses.")
 
