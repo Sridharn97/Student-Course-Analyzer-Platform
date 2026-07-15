@@ -5,6 +5,7 @@ import streamlit as st
 import plotly.express as px
 
 from .at_risk_utils import calculate_risk_scores, get_recommendations_for_student
+from .xai_utils import generate_shap_explanation
 
 
 def render_at_risk(df):
@@ -101,6 +102,19 @@ def render_at_risk(df):
                 st.write("### Improvement Timeline")
                 for t in ["**Week 1-2:** Establish study routine and initial assessment", "**Week 3-4:** Targeted interventions and progress monitoring", "**Week 5-8:** Advanced support and regular check-ins", "**Week 9-12:** Comprehensive review and long-term planning"]:
                     st.markdown(f"- {t}")
+
+            st.write("---")
+            st.write("### AI Score Explanation (XAI)")
+            with st.spinner("Generating AI explanation..."):
+                base_features = ['Progress_Percent', 'Credits', 'Course_Rating', 'Completion_Status']
+                available_features = [f for f in base_features if f in df.columns]
+                
+                fig_shap, shap_text = generate_shap_explanation(student_id, df, available_features)
+                if fig_shap:
+                    st.markdown(shap_text)
+                    st.plotly_chart(fig_shap, use_container_width=True)
+                else:
+                    st.info("Could not generate explanation for this student.")
 
     with tabs[2]:
         st.write("### Risk Analysis Statistics")
