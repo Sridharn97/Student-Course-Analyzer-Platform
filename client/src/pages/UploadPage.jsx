@@ -1,13 +1,22 @@
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Upload, GraduationCap, BarChart3, Brain, AlertTriangle, CheckCircle, Sparkles } from "lucide-react";
-import { uploadFile, loadSample } from "../api";
+import {
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  Brain,
+  CheckCircle,
+  FileSpreadsheet,
+  GraduationCap,
+  Sparkles,
+} from "lucide-react";
+import { loadSample, uploadFile, validateFile } from "../api";
 
 const FEATURES = [
-  { icon: BarChart3, title: "Real-time Analytics", desc: "Interactive charts for platform, sentiment and performance data" },
-  { icon: Brain, title: "ML Model Comparison", desc: "Compare Random Forest, Gradient Boosting, XGBoost & Ridge models" },
-  { icon: AlertTriangle, title: "At-Risk Detection", desc: "Identify students needing intervention with adjustable thresholds" },
-  { icon: GraduationCap, title: "Course Recommendations", desc: "Personalized suggestions based on student performance profiles" },
+  { icon: BarChart3, title: "Clear analytics", desc: "Turn raw learning data into useful trends." },
+  { icon: Brain, title: "Model insights", desc: "Compare predictive models with confidence." },
+  { icon: AlertTriangle, title: "Early signals", desc: "Surface students who may need support." },
+  { icon: GraduationCap, title: "Course matching", desc: "Guide learners toward the right next step." },
 ];
 
 export default function UploadPage({ onSession }) {
@@ -15,24 +24,57 @@ export default function UploadPage({ onSession }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [validation, setValidation] = useState(null);
   const inputRef = useRef();
   const navigate = useNavigate();
+  const hasRequiredMappings = validation && (validation.missing_columns || []).every(({ sheet, column }) => validation.mappings?.[sheet]?.[column]);
+
+  const completeUpload = (data) => {
+    setSuccess(data);
+    onSession(data.session_id);
+    setTimeout(() => navigate("/dashboard"), 1100);
+  };
 
   const handleFile = async (file) => {
     if (!file) return;
-    if (!file.name.endsWith(".xlsx")) {
-      setError("Please upload an Excel (.xlsx) file.");
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      setError("Please choose an Excel workbook in .xlsx format.");
       return;
     }
     setError(null);
+    setSuccess(null);
+    setSelectedFile(file);
     setLoading(true);
     try {
-      const { data } = await uploadFile(file);
-      setSuccess(data);
-      onSession(data.session_id);
-      setTimeout(() => navigate("/dashboard"), 1200);
-    } catch (e) {
-      setError(e?.response?.data?.detail || "Upload failed. Make sure the backend is running.");
+      const { data } = await validateFile(file);
+      setValidation(data);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.detail || "The upload could not be processed. Make sure the backend is running.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateMapping = (sheet, canonical, source) => {
+    setValidation((current) => ({
+      ...current,
+      mappings: {
+        ...current.mappings,
+        [sheet]: { ...current.mappings[sheet], [canonical]: source || null },
+      },
+    }));
+  };
+
+  const confirmUpload = async () => {
+    if (!selectedFile || !validation?.valid && !hasRequiredMappings) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const { data } = await uploadFile(selectedFile, validation.mappings);
+      completeUpload(data);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.detail || "The workbook could not be loaded.");
     } finally {
       setLoading(false);
     }
@@ -43,111 +85,137 @@ export default function UploadPage({ onSession }) {
     setLoading(true);
     try {
       const { data } = await loadSample();
-      setSuccess(data);
-      onSession(data.session_id);
-      setTimeout(() => navigate("/dashboard"), 1000);
-    } catch (e) {
-      setError(e?.response?.data?.detail || "Failed to load demo dataset. Make sure the backend server is running.");
+      completeUpload(data);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.detail || "The sample dataset could not be loaded. Make sure the backend is running.");
     } finally {
       setLoading(false);
     }
   };
 
-  const onDrop = (e) => {
-    e.preventDefault();
+  const onDrop = (event) => {
+    event.preventDefault();
     setDragging(false);
-    handleFile(e.dataTransfer.files[0]);
+    handleFile(event.dataTransfer.files[0]);
   };
 
   return (
-    <div className="page-enter" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "3rem 1.5rem" }}>
-      {/* Hero */}
-      <div style={{ textAlign: "center", marginBottom: "3rem", maxWidth: 640 }}>
-        <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 72, height: 72, borderRadius: 20, background: "linear-gradient(135deg, #6366f1, #06b6d4)", boxShadow: "0 8px 32px rgba(99,102,241,0.4)", marginBottom: "1.5rem" }}>
-          <GraduationCap size={36} color="#fff" />
-        </div>
-        <h1 style={{ fontSize: "2.5rem", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.2, background: "linear-gradient(135deg, #f0f4ff 30%, #818cf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-          Student Course Analyzer
-        </h1>
-        <p style={{ marginTop: "0.75rem", color: "var(--text-secondary)", fontSize: "1.05rem" }}>
-          Upload your dataset to unlock AI-powered analytics, ML predictions, and student insights.
-        </p>
-      </div>
-
-      {/* Upload card */}
-      <div className="card" style={{ width: "100%", maxWidth: 560, padding: "2.5rem" }}>
-        <div
-          className={`upload-zone${dragging ? " drag-over" : ""}`}
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={onDrop}
-          onClick={() => inputRef.current?.click()}
-        >
-          <input ref={inputRef} type="file" accept=".xlsx" style={{ display: "none" }} onChange={(e) => handleFile(e.target.files[0])} />
-          <div className="upload-icon">
-            {loading ? <div className="spinner" /> : <Upload size={32} color="#6366f1" />}
+    <div className="upload-page page-enter">
+      <div className="upload-page-inner">
+        <header className="upload-header">
+          <div className="upload-brand-mark"><GraduationCap size={25} color="#fff" strokeWidth={2.5} /></div>
+          <div>
+            <span className="upload-kicker">Academic intelligence workspace</span>
+            <div className="upload-brand">Student Course Analyzer</div>
           </div>
-          <div className="upload-title">
-            {loading ? "Processing your data…" : dragging ? "Drop it here!" : "Drop your Excel file here"}
-          </div>
-          <p className="upload-subtitle" style={{ marginTop: "0.4rem" }}>
-            {loading ? "Running data pipelines…" : "or click to browse · .xlsx format required"}
-          </p>
-          <p style={{ marginTop: "1rem", fontSize: "0.78rem", color: "var(--text-muted)" }}>
-            Expected sheets: Courses, Students, Enrollments, Feedback, Platform_Performance
-          </p>
-        </div>
+          <div className="upload-header-status"><span /> Ready for your dataset</div>
+        </header>
 
-        <div style={{ marginTop: "1.25rem", textAlign: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", margin: "0.75rem 0", color: "var(--text-muted)", fontSize: "0.75rem" }}>
-            <span style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
-            <span>OR QUICK START</span>
-            <span style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
-          </div>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            style={{ width: "100%", justifyContent: "center", gap: "0.5rem" }}
-            onClick={handleLoadSample}
-            disabled={loading}
-          >
-            <Sparkles size={16} color="#818cf8" />
-            Load Sample Dataset (Course Analysis Prediction)
-          </button>
-        </div>
-
-        {error && (
-          <div className="insight-card insight-warning" style={{ marginTop: "1rem" }}>
-            <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="insight-card insight-success" style={{ marginTop: "1rem" }}>
-            <CheckCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
-            <span>
-              Loaded <strong>{success.rows.toLocaleString()}</strong> rows ·{" "}
-              <strong>{success.students}</strong> students ·{" "}
-              <strong>{success.courses}</strong> courses — redirecting…
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Feature grid */}
-      <div className="grid-2" style={{ maxWidth: 700, width: "100%", marginTop: "2.5rem" }}>
-        {FEATURES.map(({ icon: Icon, title, desc }) => (
-          <div key={title} className="card" style={{ padding: "1.25rem 1.5rem", display: "flex", gap: "0.875rem", alignItems: "flex-start" }}>
-            <div style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 10, background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon size={18} color="#818cf8" />
+        <div className="upload-layout">
+          <section className="upload-intro">
+            <span className="upload-eyebrow"><Sparkles size={13} /> From workbook to insight</span>
+            <h1>See where learning is thriving. <em>Act early</em> where it is not.</h1>
+            <p>Bring your course data into one clear workspace for performance analytics, predictive models, early intervention, and personalized pathways.</p>
+            <div className="upload-proof-row">
+              <div><strong>05</strong><span>decision views</span></div>
+              <div><strong>04</strong><span>ML baselines</span></div>
+              <div><strong>01</strong><span>shared dataset</span></div>
             </div>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text-primary)", marginBottom: "0.2rem" }}>{title}</div>
-              <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", lineHeight: 1.5 }}>{desc}</div>
+          </section>
+
+          <section className="upload-panel" aria-labelledby="upload-title">
+            <div className="upload-panel-heading">
+              <div>
+                <span className="upload-panel-index">01</span>
+                <div><h2 id="upload-title">Start with your workbook</h2><p>Upload an Excel file to create a private analysis session.</p></div>
+              </div>
+              <span className="upload-format">.XLSX</span>
             </div>
-          </div>
-        ))}
+
+            <div
+              className={`upload-zone${dragging ? " drag-over" : ""}`}
+              onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={onDrop}
+              onClick={() => inputRef.current?.click()}
+              role="button"
+              tabIndex="0"
+              onKeyDown={(event) => event.key === "Enter" && inputRef.current?.click()}
+            >
+              <input ref={inputRef} type="file" accept=".xlsx" hidden onChange={(event) => handleFile(event.target.files[0])} />
+              <div className="upload-icon">
+                {loading ? <div className="spinner" style={{ width: 25, height: 25 }} /> : <FileSpreadsheet size={27} />}
+              </div>
+              <div className="upload-title">{loading ? "Preparing your analysis..." : dragging ? "Release to upload" : "Drop your workbook here"}</div>
+              <p className="upload-subtitle" style={{ marginTop: 6 }}>{loading ? "Validating sheets and calculating metrics" : "or select a file from your computer"}</p>
+              <p className="upload-schema-note">Expected sheets: Courses, Students, Enrollments, Feedback, Platform_Performance</p>
+            </div>
+
+            <div className="quick-start">
+              <div className="quick-start-divider"><span>OR QUICK START</span></div>
+              <button type="button" className="btn btn-ghost" onClick={handleLoadSample} disabled={loading}>
+                <Sparkles size={15} /> Load the sample dataset <ArrowRight size={14} />
+              </button>
+            </div>
+
+            {error && <div className="insight-card insight-warning" style={{ marginTop: 15 }}><AlertTriangle size={16} /> {error}</div>}
+            {success && (
+              <div className="insight-card insight-success" style={{ marginTop: 15 }}>
+                <CheckCircle size={16} />
+                <span><strong>Analysis ready.</strong> Loaded {success.rows.toLocaleString()} rows across {success.students} students and {success.courses} courses.</span>
+              </div>
+            )}
+
+            {validation && (
+              <div className="validation-panel">
+                <div className="validation-heading">
+                  <div><span className={`validation-icon ${validation.valid || hasRequiredMappings ? "is-good" : "is-error"}`}>{validation.valid || hasRequiredMappings ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}</span><div><h3>Preflight review</h3><p>{validation.valid || hasRequiredMappings ? "Your workbook can be analyzed. Review the warnings and mappings below." : "Fix the required issues before analysis can begin."}</p></div></div>
+                  <span className={`validation-status ${validation.valid || hasRequiredMappings ? "is-good" : "is-error"}`}>{validation.valid || hasRequiredMappings ? "Ready" : "Needs attention"}</span>
+                </div>
+
+                <div className="validation-stats">
+                  <div><strong>{validation.sheets?.length || 0}</strong><span>Sheets</span></div>
+                  <div><strong>{validation.summary?.rows?.toLocaleString() || 0}</strong><span>Enrollment rows</span></div>
+                  <div><strong>{validation.summary?.warnings || 0}</strong><span>Warnings</span></div>
+                </div>
+
+                {validation.errors?.length > 0 && <div className="validation-list is-error"><strong>Blocking issues</strong>{validation.errors.map((item) => <span key={item}>• {item}</span>)}</div>}
+                {(validation.invalid_values?.length > 0 || validation.duplicates?.length > 0 || validation.inconsistent_ids?.length > 0) && (
+                  <div className="validation-list is-warning">
+                    <strong>Data quality warnings</strong>
+                    {validation.invalid_values?.map((item) => <span key={`${item.sheet}-${item.column}`}>• {item.sheet}.{item.column}: {item.count} invalid values</span>)}
+                    {validation.duplicates?.map((item) => <span key={item.sheet}>• {item.sheet}: {item.count} duplicate rows</span>)}
+                    {validation.inconsistent_ids?.map((item) => <span key={item.relationship}>• {item.relationship}: {item.count} unmatched IDs</span>)}
+                  </div>
+                )}
+
+                <details className="mapping-details" open={validation.missing_columns?.length > 0}>
+                  <summary>Review column mapping</summary>
+                  <p>Map source headers to the names used by the analytics engine. Unneeded optional columns can remain blank.</p>
+                  {Object.entries(validation.mappings || {}).map(([sheet, fields]) => {
+                    const columns = validation.sheets?.find((item) => item.name === sheet)?.columns || [];
+                    return <div className="mapping-group" key={sheet}><h4>{sheet}</h4>{Object.entries(fields).map(([canonical, source]) => (
+                      <label className="mapping-row" key={`${sheet}-${canonical}`}><span>{canonical}{["Student_ID", "Course_ID", "Score"].includes(canonical) && <b>*</b>}</span><select value={source || ""} onChange={(event) => updateMapping(sheet, canonical, event.target.value)}><option value="">Not mapped</option>{columns.map((column) => <option key={column} value={column}>{column}</option>)}</select></label>
+                    ))}</div>;
+                  })}
+                </details>
+
+                <button type="button" className="btn btn-primary validation-confirm" onClick={confirmUpload} disabled={(!validation.valid && !hasRequiredMappings) || loading}>
+                  {loading ? "Creating analysis..." : "Confirm and analyze"}<ArrowRight size={15} />
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
+
+        <section className="upload-feature-grid" aria-label="Platform capabilities">
+          {FEATURES.map(({ icon: Icon, title, desc }) => (
+            <article key={title} className="upload-feature">
+              <span className="upload-feature-icon"><Icon size={17} /></span>
+              <div><h3 className="upload-feature-title">{title}</h3><p className="upload-feature-desc">{desc}</p></div>
+            </article>
+          ))}
+        </section>
       </div>
     </div>
   );

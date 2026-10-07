@@ -4,6 +4,7 @@ Run with: uvicorn server:app --reload --port 8000
 """
 
 import io
+import json
 import os
 import uuid
 import warnings
@@ -12,7 +13,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
@@ -48,15 +49,33 @@ _sessions: dict[str, pd.DataFrame] = {}
 # Helper utilities
 # ═════════════════════════════════════════════════════════════════════════════
 
-def _load_and_process(file_bytes: bytes) -> pd.DataFrame:
+def _apply_column_mapping(xls: pd.ExcelFile, mappings: dict | None = None) -> dict[str, pd.DataFrame]:
+    """Read workbook sheets and rename user-selected source columns to canonical names."""
+    mappings = mappings or {}
+    frames = {sheet: xls.parse(sheet) for sheet in xls.sheet_names}
+    for sheet, sheet_mapping in mappings.items():
+        if sheet not in frames or not isinstance(sheet_mapping, dict):
+            continue
+        rename_map = {
+            source: canonical
+            for canonical, source in sheet_mapping.items()
+            if source and source in frames[sheet].columns and source != canonical
+        }
+        if rename_map:
+            frames[sheet] = frames[sheet].rename(columns=rename_map)
+    return frames
+
+
+def _load_and_process(file_bytes: bytes, mappings: dict | None = None) -> pd.DataFrame:
     """Load Excel file and merge all sheets into one master DataFrame."""
     xls = pd.ExcelFile(io.BytesIO(file_bytes))
     sheets = xls.sheet_names
+    frames = _apply_column_mapping(xls, mappings)
 
-    enrollments = xls.parse("Enrollments") if "Enrollments" in sheets else pd.DataFrame()
-    students = xls.parse("Students") if "Students" in sheets else pd.DataFrame()
-    courses = xls.parse("Courses") if "Courses" in sheets else pd.DataFrame()
-    feedback = xls.parse("Feedback") if "Feedback" in sheets else pd.DataFrame()
+    enrollments = frames.get("Enrollments", pd.DataFrame())
+    students = frames.get("Students", pd.DataFrame())
+    courses = frames.get("Courses", pd.DataFrame())
+    feedback = frames.get("Feedback", pd.DataFrame())
 
     df = enrollments.copy()
     if not students.empty and "Student_ID" in df.columns:
@@ -87,6 +106,90 @@ def _load_and_process(file_bytes: bytes) -> pd.DataFrame:
         df["Completion_Status"] = 1
 
     return df
+
+
+CANONICAL_COLUMNS = {
+    "Enrollments": ["Student_ID", "Course_ID", "Score", "Progress_Percent", "Completion_Status", "Credits", "Course_Rating"],
+    "Students": ["Student_ID", "Student_Name"],
+    "Courses": ["Course_ID", "Course_Name", "Platform"],
+    "Feedback": ["Student_ID", "Sentiment", "Recommendation"],
+}
+
+
+def _suggest_mapping(columns: list[str], canonical_columns: list[str]) -> dict[str, str | None]:
+    """Suggest exact or normalized column matches without changing the source workbook."""
+    normalized = {str(column).strip().lower().replace(" ", "_"): column for column in columns}
+    return {
+        canonical: canonical if canonical in columns else normalized.get(canonical.lower(), None)
+        for canonical in canonical_columns
+    }
+
+
+def _validate_workbook(file_bytes: bytes) -> dict:
+    """Inspect workbook structure and values before creating an analysis session."""
+    xls = pd.ExcelFile(io.BytesIO(file_bytes))
+    frames = _apply_column_mapping(xls)
+    required_sheets = ["Enrollments", "Students", "Courses", "Feedback"]
+    missing_sheets = [sheet for sheet in required_sheets if sheet not in frames]
+    mappings = {
+        sheet: _suggest_mapping(list(frame.columns), CANONICAL_COLUMNS.get(sheet, []))
+        for sheet, frame in frames.items()
+        if sheet in CANONICAL_COLUMNS
+    }
+    missing_columns = []
+    for sheet, columns in CANONICAL_COLUMNS.items():
+        if sheet not in frames:
+            continue
+        for column in columns:
+            if mappings.get(sheet, {}).get(column) is None and column in ("Student_ID", "Course_ID", "Score"):
+                missing_columns.append({"sheet": sheet, "column": column})
+
+    invalid_values = []
+    enrollments = frames.get("Enrollments", pd.DataFrame())
+    numeric_ranges = {"Score": (0, 100), "Progress_Percent": (0, 100), "Course_Rating": (0, 5), "Credits": (0, None)}
+    for column, (minimum, maximum) in numeric_ranges.items():
+        if column not in enrollments.columns:
+            continue
+        values = pd.to_numeric(enrollments[column], errors="coerce")
+        invalid = values.isna() & enrollments[column].notna()
+        if minimum is not None:
+            invalid |= values < minimum
+        if maximum is not None:
+            invalid |= values > maximum
+        if invalid.any():
+            invalid_values.append({"sheet": "Enrollments", "column": column, "count": int(invalid.sum()), "message": f"Values must be between {minimum} and {maximum if maximum is not None else 'infinity'}"})
+
+    duplicates = [
+        {"sheet": sheet, "count": int(frame.duplicated().sum())}
+        for sheet, frame in frames.items()
+        if int(frame.duplicated().sum()) > 0
+    ]
+    inconsistent_ids = []
+    if "Student_ID" in enrollments.columns and "Students" in frames and "Student_ID" in frames["Students"].columns:
+        unknown = set(enrollments["Student_ID"].dropna().astype(str)) - set(frames["Students"]["Student_ID"].dropna().astype(str))
+        if unknown:
+            inconsistent_ids.append({"relationship": "Enrollments.Student_ID -> Students.Student_ID", "count": len(unknown), "sample": sorted(unknown)[:5]})
+    if "Course_ID" in enrollments.columns and "Courses" in frames and "Course_ID" in frames["Courses"].columns:
+        unknown = set(enrollments["Course_ID"].dropna().astype(str)) - set(frames["Courses"]["Course_ID"].dropna().astype(str))
+        if unknown:
+            inconsistent_ids.append({"relationship": "Enrollments.Course_ID -> Courses.Course_ID", "count": len(unknown), "sample": sorted(unknown)[:5]})
+
+    errors = []
+    if "Enrollments" in missing_sheets:
+        errors.append("The Enrollments sheet is required.")
+    errors.extend(f"Missing required column: {item['sheet']}.{item['column']}" for item in missing_columns)
+    return {
+        "valid": not errors,
+        "errors": errors,
+        "sheets": [{"name": sheet, "rows": len(frame), "columns": list(frame.columns)} for sheet, frame in frames.items()],
+        "missing_sheets": missing_sheets,
+        "missing_columns": missing_columns,
+        "invalid_values": invalid_values,
+        "duplicates": duplicates,
+        "inconsistent_ids": inconsistent_ids,
+        "mappings": mappings,
+        "summary": {"rows": len(enrollments), "warnings": len(invalid_values) + len(duplicates) + len(inconsistent_ids)},
+    }
 
 
 def _get_session(session_id: str) -> pd.DataFrame:
@@ -192,12 +295,23 @@ def root():
     return {"message": "Student Course Analyzer API is running", "xgboost": XGBOOST_AVAILABLE}
 
 
+@app.post("/api/validate")
+async def validate_file(file: UploadFile = File(...)):
+    """Inspect an Excel workbook without creating a session."""
+    content = await file.read()
+    try:
+        return _validate_workbook(content)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Failed to inspect file: {str(exc)}")
+
+
 @app.post("/api/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), mappings: str = Form(default="{}")):
     """Upload Excel file and create a session. Returns session_id."""
     content = await file.read()
     try:
-        df = _load_and_process(content)
+        parsed_mappings = json.loads(mappings) if mappings else {}
+        df = _load_and_process(content, parsed_mappings)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to parse file: {str(e)}")
 

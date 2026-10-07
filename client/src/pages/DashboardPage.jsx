@@ -176,17 +176,9 @@ export default function DashboardPage({ sessionId }) {
   return (
     <div className="page-enter">
       {/* Page Header */}
-      <div
-        className="page-header"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-          gap: "1rem",
-        }}
-      >
+      <div className="page-header dashboard-header">
         <div>
+          <span className="dashboard-eyebrow"><i /> Live academic intelligence</span>
           <h1 className="page-title">Executive Analytics Dashboard</h1>
           <p className="page-subtitle">
             Comprehensive overview of academic achievements, platform performance, and student progress.
@@ -194,7 +186,7 @@ export default function DashboardPage({ sessionId }) {
         </div>
         <a
           href={getExportUrl(sessionId)}
-          className="btn btn-primary"
+          className="btn btn-primary dashboard-export"
           target="_blank"
           rel="noreferrer"
           download
@@ -209,31 +201,37 @@ export default function DashboardPage({ sessionId }) {
           label="Total Students"
           value={metrics.total_students?.toLocaleString()}
           icon={Users}
+          color="indigo"
         />
         <MetricCard
           label="Total Courses"
           value={metrics.total_courses?.toLocaleString()}
           icon={BookOpen}
+          color="cyan"
         />
         <MetricCard
           label="Total Enrollments"
           value={metrics.total_enrollments?.toLocaleString()}
           icon={GraduationCap}
+          color="violet"
         />
         <MetricCard
           label="Average Score"
           value={metrics.avg_score != null ? `${metrics.avg_score}%` : null}
           icon={Award}
+          color="emerald"
         />
         <MetricCard
           label="Average Rating"
           value={metrics.avg_rating != null ? `${metrics.avg_rating} / 5` : null}
           icon={Star}
+          color="amber"
         />
         <MetricCard
           label="Average Progress"
           value={metrics.avg_progress != null ? `${metrics.avg_progress}%` : null}
           icon={Activity}
+          color="cyan"
         />
       </div>
 

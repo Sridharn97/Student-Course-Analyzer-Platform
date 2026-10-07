@@ -4,9 +4,18 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const api = axios.create({ baseURL: API_BASE });
 
-export const uploadFile = (file) => {
+export const validateFile = (file) => {
   const form = new FormData();
   form.append("file", file);
+  return api.post("/api/validate", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+};
+
+export const uploadFile = (file, mappings = {}) => {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("mappings", JSON.stringify(mappings));
   return api.post("/api/upload", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
