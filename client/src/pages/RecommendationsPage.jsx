@@ -138,6 +138,7 @@ export default function RecommendationsPage({ sessionId }) {
             </option>
           ))}
         </select>
+        {selectedId && <Link className="profile-link" to={`/students/${encodeURIComponent(selectedId)}`}>Open Student 360 profile <TrendingUp size={14} /></Link>}
       </div>
 
       {error && (

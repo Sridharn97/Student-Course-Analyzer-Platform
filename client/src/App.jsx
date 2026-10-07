@@ -8,6 +8,7 @@ import MLModelsPage from "./pages/MLModelsPage";
 import AtRiskPage from "./pages/AtRiskPage";
 import RecommendationsPage from "./pages/RecommendationsPage";
 import ReportsPage from "./pages/ReportsPage";
+import StudentProfilePage from "./pages/StudentProfilePage";
 
 const pageDetails = {
   "/dashboard": ["Overview", "Student performance at a glance"],
@@ -20,7 +21,8 @@ const pageDetails = {
 function AppShell({ sessionId }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
-  const [section, context] = pageDetails[location.pathname] || ["Workspace", "Student intelligence platform"];
+  const [section, context] = pageDetails[location.pathname]
+    || (location.pathname.startsWith("/students/") ? ["Student 360", "Individual student performance profile"] : ["Workspace", "Student intelligence platform"]);
 
   return (
     <div className="app-layout">
@@ -56,6 +58,7 @@ function AppShell({ sessionId }) {
             <Route path="/at-risk" element={<AtRiskPage sessionId={sessionId} />} />
             <Route path="/recommendations" element={<RecommendationsPage sessionId={sessionId} />} />
             <Route path="/reports" element={<ReportsPage sessionId={sessionId} />} />
+            <Route path="/students/:studentId" element={<StudentProfilePage sessionId={sessionId} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

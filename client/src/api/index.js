@@ -35,6 +35,9 @@ export const getAtRisk = (sessionId, threshold) =>
 export const getStudents = (sessionId) =>
   api.get(`/api/students/${sessionId}`);
 
+export const getStudentProfile = (sessionId, studentId) =>
+  api.get(`/api/student/${sessionId}/${studentId}/profile`);
+
 export const getCourses = (sessionId) =>
   api.get(`/api/courses/${sessionId}`);
 

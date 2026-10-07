@@ -685,6 +685,63 @@ def get_students(session_id: str):
     return {"students": _safe_records(students)}
 
 
+@app.get("/api/student/{session_id}/{student_id}/profile")
+def get_student_profile(session_id: str, student_id: str):
+    """Return the 360-degree profile for one student."""
+    df = _get_session(session_id)
+    if "Student_ID" not in df.columns:
+        raise HTTPException(status_code=400, detail="Student_ID column not found.")
+
+    student_df = df[df["Student_ID"].astype(str) == str(student_id)].copy()
+    if student_df.empty:
+        raise HTTPException(status_code=404, detail="Student not found.")
+
+    risk_df = _calculate_risk_scores(df)
+    risk_row = risk_df[risk_df["Student_ID"].astype(str) == str(student_id)]
+    risk = risk_row.iloc[0].to_dict() if not risk_row.empty else {}
+
+    course_group = student_df.groupby("Course_ID", dropna=False)
+    courses = course_group.agg(
+        score=("Score", "mean") if "Score" in student_df.columns else ("Course_ID", "count"),
+        progress=("Progress_Percent", "mean") if "Progress_Percent" in student_df.columns else ("Course_ID", "count"),
+        enrollments=("Course_ID", "size"),
+    ).reset_index()
+    if "Course_Name" in student_df.columns:
+        names = student_df[["Course_ID", "Course_Name"]].drop_duplicates("Course_ID")
+        courses = courses.merge(names, on="Course_ID", how="left")
+    courses["course_name"] = courses.get("Course_Name", courses["Course_ID"].map(lambda value: f"Course {value}"))
+    courses = courses.rename(columns={"Course_ID": "course_id"})
+    courses = courses[["course_id", "course_name", "score", "progress", "enrollments"]].round(2)
+
+    history_columns = [column for column in ["Course_ID", "Course_Name", "Score", "Progress_Percent", "Sentiment"] if column in student_df.columns]
+    history = student_df[history_columns].copy()
+    history.insert(0, "attempt", range(1, len(history) + 1))
+    history = history.rename(columns={"Course_ID": "course_id", "Course_Name": "course_name", "Score": "score", "Progress_Percent": "progress", "Sentiment": "sentiment"})
+
+    sentiment = "Neutral"
+    if "Sentiment" in student_df.columns and not student_df["Sentiment"].dropna().empty:
+        sentiment = str(student_df["Sentiment"].mode().iloc[0])
+
+    return {
+        "student_id": str(student_id),
+        "student_name": str(student_df["Student_Name"].iloc[0]) if "Student_Name" in student_df.columns else f"Student {student_id}",
+        "metrics": {
+            "avg_score": round(float(student_df["Score"].mean()), 1) if "Score" in student_df.columns else 0,
+            "avg_progress": round(float(student_df["Progress_Percent"].mean()), 1) if "Progress_Percent" in student_df.columns else 0,
+            "courses": int(student_df["Course_ID"].nunique()) if "Course_ID" in student_df.columns else 0,
+            "enrollments": len(student_df),
+            "sentiment": sentiment,
+        },
+        "risk": {
+            "score": float(risk.get("Risk_Score", 0)),
+            "level": str(risk.get("Risk_Level", "Low")),
+            "reasons": str(risk.get("Risk_Reasons", "No major risk factors detected")),
+        },
+        "courses": _safe_records(courses),
+        "history": _safe_records(history),
+    }
+
+
 @app.get("/api/courses/{session_id}")
 def get_courses(session_id: str):
     """Return list of all courses."""

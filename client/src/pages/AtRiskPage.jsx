@@ -89,7 +89,7 @@ export default function AtRiskPage({ sessionId }) {
   } = data || {};
 
   const atRiskCols = [
-    { key: "Student_ID", label: "ID" },
+    { key: "Student_ID", label: "ID", render: (v) => <Link className="table-link" to={`/students/${encodeURIComponent(v)}`}>{v}</Link> },
     { key: "Student_Name", label: "Name" },
     {
       key: "Risk_Score",
@@ -120,7 +120,7 @@ export default function AtRiskPage({ sessionId }) {
   ];
 
   const allStudentCols = [
-    { key: "Student_ID", label: "ID" },
+    { key: "Student_ID", label: "ID", render: (v) => <Link className="table-link" to={`/students/${encodeURIComponent(v)}`}>{v}</Link> },
     { key: "Student_Name", label: "Name" },
     {
       key: "Risk_Score",

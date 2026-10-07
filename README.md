@@ -81,6 +81,13 @@ The recommendation engine is intentionally explainable and data-local: it compar
 - Student performance reports with profile, course breakdown, metrics, sentiment, and suggested actions
 - Course analysis reports with enrollment, performance, rating, progress, and improvement suggestions
 
+### Student 360 profiles
+
+- Dedicated profile view for each student linked from at-risk and recommendation views
+- Score and progress history, risk score, risk reasons, sentiment, and enrollment summary
+- Enrolled-course performance table and ranked next-course recommendations
+- Shortcuts to report generation, course matching, and the intervention queue
+
 ## Technology stack
 
 ### Frontend
@@ -236,6 +243,7 @@ All session-dependent endpoints use the UUID returned by upload or sample loadin
 | `GET` | `/api/ml-models/{session_id}` | Model metrics, cross-validation, and feature importance |
 | `GET` | `/api/at-risk/{session_id}?threshold=50` | Risk scores and threshold-filtered students |
 | `GET` | `/api/students/{session_id}` | Student list for selectors and reports |
+| `GET` | `/api/student/{session_id}/{student_id}/profile` | Student 360 profile, risk summary, course performance, and history |
 | `GET` | `/api/courses/{session_id}` | Course list for selectors and reports |
 | `GET` | `/api/student/{session_id}/{student_id}/recommendations` | Student-specific course recommendations |
 | `GET` | `/api/report/{session_id}?report_type=student&target_id=...` | Generate a student or course report |
