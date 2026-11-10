@@ -430,6 +430,30 @@ input[type="range"]::-webkit-slider-thumb { width: 18px; height: 18px; appearanc
 .grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
 .section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; color: var(--text-primary); font-family: "Manrope", sans-serif; font-size: 13px; font-weight: 800; }
 .section-title::after { content: ""; flex: 1; height: 1px; margin-left: 6px; background: var(--border-subtle); }
+.learning-path { margin-bottom: 24px; padding: 22px; }
+.learning-path-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.learning-path-header .section-title { margin-bottom: 7px; }
+.learning-path-intro { max-width: 720px; margin: 0; color: var(--text-secondary); font-size: 12px; line-height: 1.6; }
+.learning-path-track { display: grid; grid-template-columns: repeat(6, minmax(145px, 1fr)); gap: 0; margin-top: 24px; }
+.learning-step { position: relative; min-width: 0; padding: 0 14px; }
+.learning-step:first-child { padding-left: 0; }
+.learning-step:last-child { padding-right: 0; }
+.learning-step:not(:last-child)::after { content: "→"; position: absolute; top: 14px; right: -7px; z-index: 1; color: var(--indigo); font-size: 18px; font-weight: 800; }
+.learning-step-marker { display: grid; width: 30px; height: 30px; place-items: center; margin-bottom: 12px; border: 2px solid #dcd9fb; border-radius: 50%; color: var(--indigo); background: #f7f6ff; font-size: 11px; font-weight: 800; }
+.learning-step-completed .learning-step-marker { border-color: #9cdec5; color: #187454; background: #edfbf5; }
+.learning-step-next .learning-step-marker { border-color: var(--indigo); color: #fff; background: var(--indigo); box-shadow: 0 0 0 5px rgba(102, 87, 232, .12); }
+.learning-step-content { min-height: 174px; padding: 13px; border: 1px solid var(--border); border-radius: 12px; background: #fbfcff; }
+.learning-step-completed .learning-step-content { border-color: #ccefe0; background: #f5fcf8; }
+.learning-step-next .learning-step-content { border-color: #d7d1ff; background: #faf9ff; box-shadow: 0 8px 18px rgba(102, 87, 232, .08); }
+.learning-step-topline { display: flex; align-items: center; justify-content: space-between; gap: 5px; min-height: 18px; }
+.learning-step-order { color: var(--text-muted); font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.learning-step-content h3 { margin: 8px 0 3px; color: var(--text-primary); font-family: "Manrope", sans-serif; font-size: 12px; line-height: 1.35; }
+.learning-step-id { margin: 0; color: var(--text-muted); font-size: 10px; }
+.learning-step-meta { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; color: var(--text-secondary); font-size: 10px; }
+.learning-step-meta span { display: flex; align-items: center; gap: 5px; }
+.learning-step-meta svg { flex: none; color: var(--cyan); }
+.learning-step-prerequisite { margin: 13px 0 0; padding-top: 9px; border-top: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 10px; line-height: 1.45; }
+.learning-step-prerequisite strong { color: var(--text-secondary); }
 .spinner { width: 34px; height: 34px; border: 3px solid #ebe9fb; border-top-color: var(--indigo); border-radius: 50%; animation: spin .75s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px; min-height: 390px; padding: 44px; color: var(--text-secondary); font-size: 13px; text-align: center; }
@@ -478,6 +502,14 @@ input[type="range"]::-webkit-slider-thumb { width: 18px; height: 18px; appearanc
   .metric-value { margin-top: 13px; font-size: 21px; }
   .metric-baseline { display: none; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; gap: 14px; }
+  .learning-path { padding: 16px; }
+  .learning-path-header { flex-direction: column; gap: 10px; }
+  .learning-path-track { grid-template-columns: 1fr; gap: 14px; margin-top: 20px; }
+  .learning-step,
+  .learning-step:first-child,
+  .learning-step:last-child { padding: 0 0 0 42px; }
+  .learning-step:not(:last-child)::after { content: "↓"; top: auto; right: auto; bottom: -19px; left: 9px; }
+  .learning-step-marker { position: absolute; top: 0; left: 0; }
   .tabs { width: 100%; margin-bottom: 16px; }
   .table-pagination { align-items: flex-start; flex-direction: column; }
   .chart-container { height: 260px; }

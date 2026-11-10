@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
-  AlertTriangle, RefreshCw, BookOpen,
-  Star, TrendingUp, Award,
+  AlertTriangle, BookOpen,
+  Star, TrendingUp, Award, Route, CheckCircle2,
+  Clock3, Gauge, Wrench,
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar,
@@ -12,6 +13,48 @@ import { getStudents, getRecommendations } from "../api";
 import MetricCard from "../components/MetricCard";
 import ChartCard from "../components/ChartCard";
 import DataTable from "../components/DataTable";
+
+function getCourseDifficulty(course, isCompleted) {
+  if (isCompleted) return course.score >= 80 ? "Completed" : "In progress";
+  if (course.avg_course_score >= 78) return "Advanced";
+  if (course.avg_course_score >= 65) return "Intermediate";
+  return "Foundational";
+}
+
+function getCourseSkills(course) {
+  const name = course.course_name || "this subject";
+  const lowerName = name.toLowerCase();
+  const skills = [];
+  if (lowerName.includes("python")) skills.push("Python");
+  if (lowerName.includes("data") || lowerName.includes("analytics")) skills.push("Data analysis");
+  if (lowerName.includes("machine") || lowerName.includes("model")) skills.push("Model building");
+  if (lowerName.includes("web") || lowerName.includes("software")) skills.push("Development");
+  if (lowerName.includes("stat")) skills.push("Statistics");
+  return skills.length > 0 ? skills.slice(0, 2) : ["Core concepts", "Applied practice"];
+}
+
+function buildLearningPath(recData) {
+  const completed = (recData.enrolled_courses || []).slice(0, 2).map((course) => ({
+    ...course,
+    status: "completed",
+    difficulty: getCourseDifficulty(course, true),
+    duration: "Completed",
+    prerequisite: "Previous learning",
+    skills: getCourseSkills(course),
+  }));
+  const next = (recData.recommendations || []).slice(0, 4).map((course, index) => {
+    const difficulty = getCourseDifficulty(course, false);
+    return {
+      ...course,
+      status: index === 0 ? "next" : "upcoming",
+      difficulty,
+      duration: difficulty === "Advanced" ? "8–10 weeks" : difficulty === "Intermediate" ? "6–8 weeks" : "4–6 weeks",
+      prerequisite: completed.length > 0 ? completed[completed.length - 1].course_name : "No prerequisite detected",
+      skills: getCourseSkills(course),
+    };
+  });
+  return [...completed, ...next];
+}
 
 export default function RecommendationsPage({ sessionId }) {
   const [students, setStudents] = useState([]);
@@ -180,6 +223,47 @@ export default function RecommendationsPage({ sessionId }) {
               icon={TrendingUp}
             />
           </div>
+
+          {(() => {
+            const learningPath = buildLearningPath(recData);
+            return learningPath.length > 0 && (
+              <section className="learning-path card" aria-labelledby="learning-path-title">
+                <div className="learning-path-header">
+                  <div>
+                    <h2 id="learning-path-title" className="section-title"><Route size={16} /> Suggested learning path</h2>
+                    <p className="learning-path-intro">
+                      A practical sequence based on completed courses and your strongest course matches.
+                      Course details are estimates from the uploaded dataset.
+                    </p>
+                  </div>
+                  <span className="badge badge-info">{learningPath.filter((step) => step.status === "completed").length} completed</span>
+                </div>
+                <div className="learning-path-track">
+                  {learningPath.map((step, index) => (
+                    <article className={`learning-step learning-step-${step.status}`} key={`${step.course_id}-${step.status}`}>
+                      <div className="learning-step-marker">
+                        {step.status === "completed" ? <CheckCircle2 size={18} /> : index + 1}
+                      </div>
+                      <div className="learning-step-content">
+                        <div className="learning-step-topline">
+                          <span className="learning-step-order">{step.status === "completed" ? "Completed" : step.status === "next" ? "Next recommended" : "Upcoming"}</span>
+                          {step.status === "next" && <span className="badge badge-success">Best match</span>}
+                        </div>
+                        <h3>{step.course_name}</h3>
+                        <p className="learning-step-id">Course {step.course_id}</p>
+                        <div className="learning-step-meta">
+                          <span><Gauge size={13} /> {step.difficulty}</span>
+                          <span><Clock3 size={13} /> {step.duration}</span>
+                          <span><Wrench size={13} /> {step.skills.join(" · ")}</span>
+                        </div>
+                        <p className="learning-step-prerequisite"><strong>Prerequisite:</strong> {step.prerequisite}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            );
+          })()}
 
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
             <div className="grid-2">
