@@ -56,6 +56,11 @@ function buildLearningPath(recData) {
   return [...completed, ...next];
 }
 
+function shortenCourseName(name, maxLength = 21) {
+  const value = String(name || "Course");
+  return value.length > maxLength ? `${value.slice(0, maxLength - 1).trimEnd()}…` : value;
+}
+
 export default function RecommendationsPage({ sessionId }) {
   const [students, setStudents] = useState([]);
   const [selectedId, setSelectedId] = useState("");
@@ -155,7 +160,10 @@ export default function RecommendationsPage({ sessionId }) {
     },
   ];
 
-  const top5Recs = (recData?.recommendations || []).slice(0, 8);
+  const top5Recs = (recData?.recommendations || []).slice(0, 8).map((course) => ({
+    ...course,
+    chart_name: shortenCourseName(course.course_name),
+  }));
 
   return (
     <div className="page-enter">
@@ -279,31 +287,37 @@ export default function RecommendationsPage({ sessionId }) {
 
               {/* Top Recommendations Chart */}
               {top5Recs.length > 0 && (
-                <ChartCard title="Top Recommendations — Match Score">
-                  <div className="chart-container">
+                <ChartCard title="Top course matches">
+                  <div className="chart-container recommendation-chart">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={top5Recs} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <BarChart data={top5Recs} layout="vertical" margin={{ top: 4, right: 12, bottom: 4, left: 0 }}>
+                        <CartesianGrid strokeDasharray="4 4" stroke="#e9edf4" horizontal={false} />
                         <XAxis
                           type="number"
                           domain={[0, 100]}
-                          tick={{ fill: "#94a3b8", fontSize: 10 }}
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: "#7c8aa0", fontSize: 10 }}
                           unit="%"
                         />
                         <YAxis
                           type="category"
-                          dataKey="course_name"
-                          tick={{ fill: "#94a3b8", fontSize: 10 }}
-                          width={120}
+                          dataKey="chart_name"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: "#60708a", fontSize: 10 }}
+                          width={145}
                         />
                         <Tooltip
-                          contentStyle={{ background: "#0d1b2e", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 8, color: "#f0f4ff" }}
+                          contentStyle={{ background: "#ffffff", border: "1px solid #e5e9f2", borderRadius: 10, color: "#17233a", boxShadow: "0 12px 28px rgba(32, 45, 75, .12)" }}
+                          labelStyle={{ color: "#60708a", fontWeight: 700 }}
+                          labelFormatter={(_, payload) => payload?.[0]?.payload?.course_name || "Course"}
                           formatter={(val) => [`${val}%`, "Match Score"]}
                         />
                         <Bar
                           dataKey="recommendation_score"
-                          fill="#6366f1"
-                          radius={[0, 6, 6, 0]}
+                          fill="#6657e8"
+                          radius={[0, 8, 8, 0]}
                           name="Match Score"
                         />
                       </BarChart>

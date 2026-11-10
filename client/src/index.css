@@ -422,6 +422,7 @@ input[type="range"]::-webkit-slider-thumb { width: 18px; height: 18px; appearanc
 
 /* Charts, loading and content helpers */
 .chart-container { width: 100%; height: 300px; }
+.recommendation-chart { height: 330px; padding-top: 4px; }
 .chart-container-lg { width: 100%; height: 380px; }
 .recharts-text { fill: #7c8aa0 !important; font-family: "DM Sans", sans-serif !important; font-size: 11px !important; }
 .recharts-default-tooltip { border: 1px solid var(--border) !important; border-radius: 10px !important; box-shadow: var(--shadow-hover) !important; }
@@ -513,6 +514,7 @@ input[type="range"]::-webkit-slider-thumb { width: 18px; height: 18px; appearanc
   .tabs { width: 100%; margin-bottom: 16px; }
   .table-pagination { align-items: flex-start; flex-direction: column; }
   .chart-container { height: 260px; }
+  .recommendation-chart { height: 320px; }
   .landing-page { padding: 22px 16px 34px; }
   .landing-nav { margin-bottom: 39px; }
   .landing-nav-note { display: none; }
@@ -701,6 +703,13 @@ body {
 .profile-risk-reasons { min-height: 48px; margin: 17px 0 18px; padding: 11px 12px; border-left: 3px solid #d49a43; color: var(--text-secondary); background: #fffaf1; font-size: 12px; line-height: 1.55; }
 .profile-inline-link { margin-top: auto; }
 .student-profile-page > .card { margin-bottom: 22px; }
+.personal-metrics-grid { grid-template-columns: repeat(6, minmax(145px, 1fr)); }
+.next-actions-card { margin-bottom: 22px; }
+.next-actions-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.next-action { display: flex; align-items: flex-start; gap: 10px; min-height: 94px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: #fbfcff; }
+.next-action-icon { display: grid; width: 30px; height: 30px; place-items: center; flex: none; border-radius: 9px; color: var(--indigo); background: #efedff; }
+.next-action strong { display: block; color: var(--text-primary); font-size: 12px; line-height: 1.35; }
+.next-action p { margin: 5px 0 0; color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
 
 @media (max-width: 760px) {
   .profile-back-row, .profile-hero { align-items: flex-start; flex-direction: column; }
@@ -708,4 +717,6 @@ body {
   .profile-risk-summary { justify-content: flex-start; }
   .profile-risk-label { text-align: left; }
   .profile-grid { grid-template-columns: 1fr; }
+  .personal-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .next-actions-list { grid-template-columns: 1fr; }
 }

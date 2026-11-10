@@ -3,8 +3,11 @@ import { Link, useParams } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowLeft,
+  Award,
   BarChart3,
   BookOpen,
+  CheckCircle2,
+  CircleDot,
   FileText,
   HeartPulse,
   RefreshCw,
@@ -88,6 +91,25 @@ export default function StudentProfilePage({ sessionId }) {
   }
 
   const { metrics, risk, courses = [], history = [] } = profile;
+  const completedCourses = courses.filter((course) => Number(course.progress || 0) >= 100);
+  const ongoingCourses = courses.filter((course) => Number(course.progress || 0) < 100);
+  const averageGrade = metrics.avg_score >= 90 ? "A" : metrics.avg_score >= 80 ? "B" : metrics.avg_score >= 70 ? "C" : metrics.avg_score >= 60 ? "D" : "Needs support";
+  const nextActions = [];
+  if (Number(metrics.avg_progress || 0) < 70) {
+    nextActions.push({ icon: TrendingUp, title: "Increase course progress", text: "Complete the next pending module and keep your weekly learning pace steady." });
+  }
+  if (Number(metrics.avg_score || 0) < 70) {
+    nextActions.push({ icon: BookOpen, title: "Review lower-scoring subjects", text: "Revisit lessons and practice activities in courses where your score is below 70%." });
+  }
+  if (risk.level === "High" || risk.level === "Critical") {
+    nextActions.push({ icon: HeartPulse, title: "Prioritize support", text: "Focus on the risk factors below and consider asking a tutor or instructor for help." });
+  }
+  if (nextActions.length === 0) {
+    nextActions.push({ icon: CheckCircle2, title: "Keep your momentum", text: "Your current indicators are healthy. Continue progressing and explore a recommended next course." });
+  }
+  if (recommendations.length > 0 && nextActions.length < 3) {
+    nextActions.push({ icon: TrendingUp, title: "Explore your next course", text: `${recommendations[0].course_name} is your strongest current course match.` });
+  }
   const chartData = history.map((entry) => ({
     ...entry,
     label: entry.course_name || `Course ${entry.course_id}`,
@@ -131,11 +153,13 @@ export default function StudentProfilePage({ sessionId }) {
         </div>
       </div>
 
-      <div className="metrics-grid">
-        <MetricCard label="Average Score" value={`${metrics.avg_score}%`} icon={BarChart3} color="indigo" />
-        <MetricCard label="Average Progress" value={`${metrics.avg_progress}%`} icon={TrendingUp} color="cyan" />
-        <MetricCard label="Courses Enrolled" value={metrics.courses} icon={BookOpen} color="violet" />
-        <MetricCard label="Overall Sentiment" value={metrics.sentiment} icon={HeartPulse} color="emerald" />
+      <div className="metrics-grid personal-metrics-grid">
+        <MetricCard label="Overall Performance" value={`${metrics.avg_score}%`} icon={BarChart3} color="indigo" />
+        <MetricCard label="Average Grade" value={averageGrade} icon={Award} color="violet" />
+        <MetricCard label="Course Progress" value={`${metrics.avg_progress}%`} icon={TrendingUp} color="cyan" />
+        <MetricCard label="Completed Courses" value={completedCourses.length} icon={CheckCircle2} color="emerald" />
+        <MetricCard label="Ongoing Courses" value={ongoingCourses.length} icon={BookOpen} color="amber" />
+        <MetricCard label="Current Risk" value={risk.level} icon={HeartPulse} color={risk.level === "Low" ? "emerald" : "rose"} />
       </div>
 
       <div className="profile-grid">
@@ -164,6 +188,18 @@ export default function StudentProfilePage({ sessionId }) {
           <Link to="/at-risk" className="profile-inline-link">Review intervention queue <TrendingUp size={14} /></Link>
         </div>
       </div>
+
+      <section className="card card-padded next-actions-card" aria-labelledby="next-actions-title">
+        <div className="profile-section-heading"><CircleDot size={16} /><h3 id="next-actions-title" className="section-title">Recommended next actions</h3></div>
+        <div className="next-actions-list">
+          {nextActions.slice(0, 3).map(({ icon: Icon, title, text }) => (
+            <div className="next-action" key={title}>
+              <div className="next-action-icon"><Icon size={17} /></div>
+              <div><strong>{title}</strong><p>{text}</p></div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <div className="card card-padded">
         <div className="profile-section-heading"><BookOpen size={16} /><h3 className="section-title">Enrolled course performance</h3></div>
