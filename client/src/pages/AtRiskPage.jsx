@@ -253,14 +253,15 @@ export default function AtRiskPage({ sessionId }) {
               <div className="chart-container">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={risk_histogram}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                    <XAxis dataKey="range" tick={{ fill: "#94a3b8", fontSize: 9 }} />
-                    <YAxis tick={{ fill: "#94a3b8", fontSize: 10 }} />
+                    <CartesianGrid strokeDasharray="4 4" stroke="#e9edf4" vertical={false} />
+                    <XAxis dataKey="range" axisLine={false} tickLine={false} tick={{ fill: "#7c8aa0", fontSize: 10 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: "#7c8aa0", fontSize: 10 }} />
                     <Tooltip
-                      contentStyle={{ background: "#0d1b2e", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 8, color: "#f0f4ff" }}
+                      contentStyle={{ background: "#ffffff", border: "1px solid #e5e9f2", borderRadius: 10, color: "#17233a", boxShadow: "0 12px 28px rgba(32, 45, 75, .12)" }}
+                      labelStyle={{ color: "#60708a", fontWeight: 700 }}
                     />
                     <ReferenceLine x={`${committed}`} stroke="#f43f5e" strokeDasharray="4 4" label={{ value: `Threshold ${committed}%`, fill: "#f43f5e", fontSize: 10 }} />
-                    <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} name="Students" />
+                    <Bar dataKey="count" fill="#6657e8" radius={[8, 8, 2, 2]} name="Students" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -298,13 +299,16 @@ export default function AtRiskPage({ sessionId }) {
               <div className="chart-container">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={at_risk_level_counts}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                    <XAxis dataKey="risk_level" tick={{ fill: "#94a3b8", fontSize: 12 }} />
-                    <YAxis tick={{ fill: "#94a3b8", fontSize: 10 }} />
-                    <Tooltip contentStyle={{ background: "#0d1b2e", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 8, color: "#f0f4ff" }} />
-                    <Bar dataKey="count" name="Students" radius={[6, 6, 0, 0]}>
+                    <CartesianGrid strokeDasharray="4 4" stroke="#e9edf4" vertical={false} />
+                    <XAxis dataKey="risk_level" axisLine={false} tickLine={false} tick={{ fill: "#7c8aa0", fontSize: 12 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: "#7c8aa0", fontSize: 10 }} />
+                    <Tooltip
+                      contentStyle={{ background: "#ffffff", border: "1px solid #e5e9f2", borderRadius: 10, color: "#17233a", boxShadow: "0 12px 28px rgba(32, 45, 75, .12)" }}
+                      labelStyle={{ color: "#60708a", fontWeight: 700 }}
+                    />
+                    <Bar dataKey="count" name="Students" radius={[8, 8, 2, 2]}>
                       {at_risk_level_counts.map((entry, idx) => (
-                        <rect key={idx} fill={RISK_COLORS[entry.risk_level] || "#6366f1"} />
+                        <Cell key={idx} fill={RISK_COLORS[entry.risk_level] || "#6657e8"} />
                       ))}
                     </Bar>
                   </BarChart>

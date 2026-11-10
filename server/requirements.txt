@@ -5,5 +5,5 @@ scikit-learn
 xgboost
 openpyxl
 fastapi
-uvicorn[standard]
+uvicorn
 python-multipart
