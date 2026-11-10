@@ -34,14 +34,6 @@ export default function Sidebar({ sessionId, isOpen, onClose }) {
         <button className="sidebar-close" type="button" onClick={onClose} aria-label="Close navigation"><X size={20} /></button>
       </div>
 
-      <div className="sidebar-workspace">
-        <span className="sidebar-workspace-dot" />
-        <div>
-          <strong>{hasSession ? "Active workspace" : "Get started"}</strong>
-          <span>{hasSession ? "Analytics session" : "Upload a workbook"}</span>
-        </div>
-      </div>
-
       <span className="sidebar-section-label">Explore</span>
       <nav className="sidebar-nav" aria-label="Primary navigation">
         {navItems.map(({ to, icon: Icon, label }) => (

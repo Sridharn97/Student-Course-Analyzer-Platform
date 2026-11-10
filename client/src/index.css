@@ -216,23 +216,6 @@ input:focus-visible { outline: 3px solid rgba(102, 87, 232, .26); outline-offset
 .sidebar-logo-text span { color: #a8b2ff; }
 .sidebar-logo-text small { display: block; margin-top: 3px; color: #8793a9; font-family: "DM Sans", sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
 
-.sidebar-workspace {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 18px 8px 14px;
-  padding: 11px;
-  border: 1px solid rgba(207, 219, 242, .09);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, .045);
-}
-
-.sidebar-workspace-dot { width: 8px; height: 8px; border-radius: 50%; background: #41cba2; box-shadow: 0 0 0 4px rgba(65, 203, 162, .12); }
-.sidebar-workspace strong,
-.sidebar-workspace span { display: block; }
-.sidebar-workspace strong { color: #ecf0fb; font-size: 11px; font-weight: 700; }
-.sidebar-workspace div span { margin-top: 2px; color: #8592aa; font-size: 10px; }
-
 .sidebar-section-label {
   margin: 6px 11px 8px;
   color: #738099;
